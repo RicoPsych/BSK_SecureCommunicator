@@ -1,0 +1,62 @@
+﻿<Window x:Class="CommunicatorWPF.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:CommunicatorWPF"
+        mc:Ignorable="d"
+        Title="MainWindow" Height="450" Width="800">
+    <Grid>
+        <Grid HorizontalAlignment="Right" Width="619">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="169*"/>
+                <RowDefinition Height="48*"/>
+            </Grid.RowDefinitions>
+            <TextBox Name="SendBox" Margin="0,5,74,32" Text="..." TextWrapping="Wrap" Grid.Row="1"/>
+            <Button Name="SendButton" Content="Send" Margin="550,5,0,0" Click="SendText" Height="59" VerticalAlignment="Top" HorizontalAlignment="Left" Width="45" IsDefault="True" Grid.Row="1"/>
+            <ScrollViewer Name="MessageBoxScroll" Margin="0,0,19,0">
+                <Grid Name="MessageBoxGrid">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition>
+                        </ColumnDefinition>
+                        <ColumnDefinition>
+                        </ColumnDefinition>
+                    </Grid.ColumnDefinitions>
+
+                </Grid>
+            </ScrollViewer>
+        </Grid>
+
+        <Grid HorizontalAlignment="Left" Width="181" Height="434" VerticalAlignment="Bottom">
+            <Grid Height="72" VerticalAlignment="Top" HorizontalAlignment="Center" Width="181" Margin="0,22,0,0">
+                <TextBlock HorizontalAlignment="Left" Margin="10,6,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Grid.RowSpan="2"><Run Language="pl-pl" Text="CipherMode"/></TextBlock>
+                <RadioButton Content="ECB" HorizontalAlignment="Left" Margin="10,42,0,0" VerticalAlignment="Top" GroupName="CipherMode" Grid.RowSpan="2" Checked="RadioButtonECB"/>
+                <RadioButton Content="CBC" HorizontalAlignment="Left" Margin="10,22,0,0" VerticalAlignment="Top" GroupName="CipherMode" Checked="RadioButtonCBC" IsChecked="True"/>
+            </Grid>
+
+            <Grid Margin="0,99,0,0" HorizontalAlignment="Center" Width="181" Height="128" VerticalAlignment="Top">
+
+                <TextBlock HorizontalAlignment="Left" Height="20" Margin="10,10,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="80"><Run Language="pl-pl" Text="Sender Ip"/></TextBlock>
+                <TextBox Name="ip_send_box"   Text="127.0.0.1" HorizontalAlignment="Left" Margin="10,30,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="80" TextChanged="IPSendChange"/>
+                <TextBox Name="port_send_box" Text="13000"  HorizontalAlignment="Left" Margin="95,30,0,0"  TextWrapping="Wrap" VerticalAlignment="Top" Width="67" TextChanged="SenderPortChange"/>
+
+                <TextBox Name="port_listen_box" Text="12000" HorizontalAlignment="Left" Margin="95,75,0,0"  TextWrapping="Wrap" VerticalAlignment="Top" Width="67" TextChanged="PortChange" RenderTransformOrigin="0.001,1.428"/>
+                <TextBlock HorizontalAlignment="Left" Height="20" Margin="10,56,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="80"><Run Text="Listen "/><Run Language="pl-pl" Text="Ip"/></TextBlock>
+                <TextBox x:Name="ip_listen_box" Text="127.0.0.1" HorizontalAlignment="Left" Margin="10,75,0,0"  TextWrapping="Wrap" VerticalAlignment="Top" Width="80" TextChanged="IPListenChange"/>
+
+            </Grid>
+            <Button Content="Connect" HorizontalAlignment="Left" Margin="99,291,0,0" VerticalAlignment="Top" Click="Connect"/>
+            <Button Content="Disconnect" HorizontalAlignment="Left" Margin="29,291,0,0" VerticalAlignment="Top" Click="Disconnect"/>
+            <StatusBar x:Name="StatusBar" Margin="0,348,80,46">
+                <TextBlock x:Name="ListeningStatus" Text="Listening" TextWrapping="Wrap"/>
+                <TextBlock x:Name="SessionStatus" Text="Session" TextWrapping="Wrap"/>
+                
+            </StatusBar>
+            <StatusBar Margin="0,408,0,0">
+                <TextBlock x:Name="StateBar" Text="" TextWrapping="Wrap"/>
+            </StatusBar>
+        </Grid>
+
+
+    </Grid>
+</Window>
