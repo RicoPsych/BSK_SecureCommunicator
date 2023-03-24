@@ -116,7 +116,6 @@ namespace CommunicatorWPF
 
         private void StatusBarUpdater(object source, ElapsedEventArgs e)
         {
-            
             Dispatcher.Invoke(() =>
             {
                 if (communicator.listening == 1)
