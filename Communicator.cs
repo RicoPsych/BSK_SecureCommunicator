@@ -53,10 +53,6 @@ namespace Communicator
 
         Thread listener = null;
 
-        Thread key_listener;
-
-        Thread msg_listener;
-
         public Communicator()
         {
             port_listen = 10000;
@@ -116,9 +112,6 @@ namespace Communicator
                 
                 //old
                 //stream.Write(data, 0, data.Length);
-                
-
-
             }
             catch (ArgumentNullException e)
             {
