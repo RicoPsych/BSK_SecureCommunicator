@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:CommunicatorWPF"
         mc:Ignorable="d"
-        Title="MainWindow" Height="450" Width="800">
+        Title="MainWindow" Height="450" Width="800" Closed="Disconnect">
     <Grid>
         <Grid HorizontalAlignment="Right" Width="619">
             <Grid.RowDefinitions>
@@ -45,16 +45,20 @@
                 <TextBox x:Name="ip_listen_box" Text="127.0.0.1" HorizontalAlignment="Left" Margin="10,75,0,0"  TextWrapping="Wrap" VerticalAlignment="Top" Width="80" TextChanged="IPListenChange"/>
 
             </Grid>
-            <Button Content="Connect" HorizontalAlignment="Left" Margin="99,291,0,0" VerticalAlignment="Top" Click="Connect"/>
-            <Button Content="Disconnect" HorizontalAlignment="Left" Margin="29,291,0,0" VerticalAlignment="Top" Click="Disconnect"/>
+            <Button Content="Connect" HorizontalAlignment="Left" Margin="99,197,0,0" VerticalAlignment="Top" Click="Connect" Width="65"/>
+            <Button Content="Disconnect" HorizontalAlignment="Left" Margin="19,197,0,0" VerticalAlignment="Top" Click="Disconnect"/>
             <StatusBar x:Name="StatusBar" Margin="0,348,80,46">
                 <TextBlock x:Name="ListeningStatus" Text="Listening" TextWrapping="Wrap"/>
                 <TextBlock x:Name="SessionStatus" Text="Session" TextWrapping="Wrap"/>
-                
+
             </StatusBar>
             <StatusBar Margin="0,408,0,0">
                 <TextBlock x:Name="StateBar" Text="" TextWrapping="Wrap"/>
             </StatusBar>
+            <Button Content="Choose File" HorizontalAlignment="Left" Margin="29,259,0,0" VerticalAlignment="Top" Width="118" Click="FileChooser"/>
+            
+            <ProgressBar x:Name="SendProgressBar" Margin="30,242,34,180" />
+            <ProgressBar x:Name="DownloadProgressBar" Margin="30,283,34,138"/>
         </Grid>
 
 

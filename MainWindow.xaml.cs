@@ -2,16 +2,13 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading.Tasks;
 using System.Timers;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
 using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
+using Microsoft.Win32;
+
 
 namespace CommunicatorWPF
 {
@@ -27,7 +24,7 @@ namespace CommunicatorWPF
         {
             InitializeComponent();
 
-            Timer statusUpdater = new Timer() ;
+            Timer statusUpdater = new Timer();
             statusUpdater.Elapsed += StatusBarUpdater;
             statusUpdater.Interval = 300;
             statusUpdater.Enabled = true;
@@ -36,7 +33,7 @@ namespace CommunicatorWPF
 
         private void SendText(object sender, RoutedEventArgs e)
         {
-            RowDefinition rowdef = new RowDefinition(); 
+            RowDefinition rowdef = new RowDefinition();
             rowdef.MinHeight = 0.1;
             this.MessageBoxGrid.RowDefinitions.Add(new RowDefinition());
 
@@ -49,10 +46,10 @@ namespace CommunicatorWPF
             message.TextWrapping = System.Windows.TextWrapping.Wrap;
             message.VerticalAlignment = System.Windows.VerticalAlignment.Top;
 
-            Grid.SetRow(message, MessageBoxGrid.RowDefinitions.Count-1);
+            Grid.SetRow(message, MessageBoxGrid.RowDefinitions.Count - 1);
             Grid.SetColumn(message, 1);
-            this.MessageBoxGrid.Children.Add(message);
 
+            this.MessageBoxGrid.Children.Add(message);
             this.MessageBoxScroll.ScrollToBottom();
 
             communicator.SendEncryptedText(this.SendBox.Text);
@@ -61,26 +58,35 @@ namespace CommunicatorWPF
         }
 
 
-
+        private void FileChooser(object sender, RoutedEventArgs e)
+        {
+            OpenFileDialog openFileDialog = new OpenFileDialog();
+            if(openFileDialog.ShowDialog() == true)
+            {
+                Task send = new Task(() => communicator.SendEncryptedFile(openFileDialog.FileName,SendProgressBar));
+                send.Start();
+                /*communicator.SendEncryptedFile(openFileDialog.FileName)*/;
+            }
+        }
 
 
 
         private void Connect(object sender, RoutedEventArgs e)
         {
-            if(!communicator.listen)
-                communicator.StartListener(MessageBoxGrid);
-            
+            if (!communicator.listen)
+                communicator.StartListener(MessageBoxGrid, DownloadProgressBar);
+
             communicator.SendSessionKeyAndIV();
         }
+        //Closing Window
+        private void Disconnect(object sender, EventArgs e)
+        {
+            communicator.StopListening();
+        }
+        //Button
         private void Disconnect(object sender, RoutedEventArgs e)
         {
             communicator.StopListening();
-
-//            communicator.StartListener(MessageBoxGrid); In main
-  
-            
-            //    communicator.ListenForSessionKeyAndIV();
-            //    communicator.ListenForMsg(this.MessageBoxGrid);
         }
 
 
@@ -116,32 +122,40 @@ namespace CommunicatorWPF
 
         private void StatusBarUpdater(object source, ElapsedEventArgs e)
         {
-            Dispatcher.Invoke(() =>
+            try
             {
-                if (communicator.listening == 1)
+                Dispatcher.Invoke(() =>
                 {
-                    ListeningStatus.Background = new SolidColorBrush(Colors.Orange);
-                }
-                else if (communicator.listening == 2)
-                {
-                    ListeningStatus.Background = new SolidColorBrush(Colors.Green);
-                }
-                else
-                {
+                    if (communicator.listening == 1)
+                    {
+                        ListeningStatus.Background = new SolidColorBrush(Colors.Orange);
+                    }
+                    else if (communicator.listening == 2)
+                    {
+                        ListeningStatus.Background = new SolidColorBrush(Colors.Green);
+                    }
+                    else
+                    {
+                        ListeningStatus.Background = new SolidColorBrush(Colors.Red);
+                    }
 
-                    ListeningStatus.Background = new SolidColorBrush(Colors.Red);
-                }
+                    if (communicator.session_key)
+                    {
+                        SessionStatus.Background = new SolidColorBrush(Colors.Green);
+                    }
+                    else
+                    {
+                        SessionStatus.Background = new SolidColorBrush(Colors.Red);
+                    }
+                });
 
-                if (communicator.session_key)
-                {
-                    SessionStatus.Background = new SolidColorBrush(Colors.Green);
-                }
-                else
-                {
-                    SessionStatus.Background = new SolidColorBrush(Colors.Red);
-                }
-            });
-
+            }
+            //Catch Cancel of Timer.
+            catch (TaskCanceledException cancel_event)
+            {
+                Console.WriteLine(cancel_event.Message);
+            }
         }
+
     }
 }
