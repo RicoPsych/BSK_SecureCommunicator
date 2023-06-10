@@ -7,14 +7,16 @@
         mc:Ignorable="d"
         Title="MainWindow" Height="450" Width="800" Closed="Disconnect">
     <Grid>
-        <Grid HorizontalAlignment="Right" Width="619">
+        <Grid Margin="181,0,0,0" Height="434" VerticalAlignment="Top" Name="ConversationArea" HorizontalAlignment="Left" Width="619">
             <Grid.RowDefinitions>
-                <RowDefinition Height="169*"/>
+                <RowDefinition Height="148*"/>
+                <RowDefinition Height="21*"/>
                 <RowDefinition Height="48*"/>
             </Grid.RowDefinitions>
-            <TextBox Name="SendBox" Margin="0,5,74,32" Text="..." TextWrapping="Wrap" Grid.Row="1"/>
-            <Button Name="SendButton" Content="Send" Margin="550,5,0,0" Click="SendText" Height="59" VerticalAlignment="Top" HorizontalAlignment="Left" Width="45" IsDefault="True" Grid.Row="1"/>
-            <ScrollViewer Name="MessageBoxScroll" Margin="0,0,19,0">
+
+            <TextBox Name="SendBox" Margin="0,0,74,32" Text="..." TextWrapping="Wrap" Grid.Row="2" Height="59" VerticalAlignment="Bottom" HorizontalAlignment="Right" Width="545"/>
+            <Button Name="SendButton" Content="Send" Margin="0,0,24,32" Click="SendText" Height="59" VerticalAlignment="Bottom" HorizontalAlignment="Right" Width="45" IsDefault="True" Grid.Row="2"/>
+            <ScrollViewer Name="MessageBoxScroll" Grid.RowSpan="2" HorizontalAlignment="Left" Width="600" Height="338" VerticalAlignment="Top">
                 <Grid Name="MessageBoxGrid">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition>
@@ -27,14 +29,18 @@
             </ScrollViewer>
         </Grid>
 
-        <Grid HorizontalAlignment="Left" Width="181" Height="434" VerticalAlignment="Bottom">
-            <Grid Height="72" VerticalAlignment="Top" HorizontalAlignment="Center" Width="181" Margin="0,22,0,0">
+        <Grid HorizontalAlignment="Left" Width="181" Height="434" VerticalAlignment="Top">
+            <Grid Height="72" VerticalAlignment="Top" HorizontalAlignment="Center" Width="181" Margin="0,217,0,0">
                 <TextBlock HorizontalAlignment="Left" Margin="10,6,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Grid.RowSpan="2"><Run Language="pl-pl" Text="CipherMode"/></TextBlock>
                 <RadioButton Content="ECB" HorizontalAlignment="Left" Margin="10,42,0,0" VerticalAlignment="Top" GroupName="CipherMode" Grid.RowSpan="2" Checked="RadioButtonECB"/>
                 <RadioButton Content="CBC" HorizontalAlignment="Left" Margin="10,22,0,0" VerticalAlignment="Top" GroupName="CipherMode" Checked="RadioButtonCBC" IsChecked="True"/>
+
+                <TextBlock HorizontalAlignment="Left" Height="20" Margin="91,6,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="90"><Run Language="pl-pl" Text="Recipient Name"/></TextBlock>
+                <TextBox Name="Recipient"   Text="B" HorizontalAlignment="Left" Margin="91,0,0,0" TextWrapping="Wrap" VerticalAlignment="Center" Width="80" TextChanged="RecipientChange"/>
+
             </Grid>
 
-            <Grid Margin="0,99,0,0" HorizontalAlignment="Center" Width="181" Height="128" VerticalAlignment="Top">
+            <Grid Margin="0,89,0,0" HorizontalAlignment="Center" Width="181" Height="128" VerticalAlignment="Top">
 
                 <TextBlock HorizontalAlignment="Left" Height="20" Margin="10,10,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="80"><Run Language="pl-pl" Text="Sender Ip"/></TextBlock>
                 <TextBox Name="ip_send_box"   Text="127.0.0.1" HorizontalAlignment="Left" Margin="10,30,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="80" TextChanged="IPSendChange"/>
@@ -43,22 +49,41 @@
                 <TextBox Name="port_listen_box" Text="12000" HorizontalAlignment="Left" Margin="95,75,0,0"  TextWrapping="Wrap" VerticalAlignment="Top" Width="67" TextChanged="PortChange" RenderTransformOrigin="0.001,1.428"/>
                 <TextBlock HorizontalAlignment="Left" Height="20" Margin="10,56,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="80"><Run Text="Listen "/><Run Language="pl-pl" Text="Ip"/></TextBlock>
                 <TextBox x:Name="ip_listen_box" Text="127.0.0.1" HorizontalAlignment="Left" Margin="10,75,0,0"  TextWrapping="Wrap" VerticalAlignment="Top" Width="80" TextChanged="IPListenChange"/>
-
+                <Button Content="Connect" HorizontalAlignment="Left" Margin="18,99,0,0" VerticalAlignment="Top" Click="Connect" Width="65"/>
+                <Button Content="Disconnect" HorizontalAlignment="Left" Margin="97,99,0,0" VerticalAlignment="Top" Click="Disconnect"/>
             </Grid>
-            <Button Content="Connect" HorizontalAlignment="Left" Margin="99,197,0,0" VerticalAlignment="Top" Click="Connect" Width="65"/>
-            <Button Content="Disconnect" HorizontalAlignment="Left" Margin="19,197,0,0" VerticalAlignment="Top" Click="Disconnect"/>
-            <StatusBar x:Name="StatusBar" Margin="0,348,80,46">
+
+            <StatusBar x:Name="StatusBar" Margin="0,384,25,10">
                 <TextBlock x:Name="ListeningStatus" Text="Listening" TextWrapping="Wrap"/>
                 <TextBlock x:Name="SessionStatus" Text="Session" TextWrapping="Wrap"/>
+                <TextBlock x:Name="LoginStatus" Text="LoggedIn" TextWrapping="Wrap"/>
 
             </StatusBar>
-            <StatusBar Margin="0,408,0,0">
+            <StatusBar Margin="1,353,25,55">
                 <TextBlock x:Name="StateBar" Text="" TextWrapping="Wrap"/>
             </StatusBar>
-            <Button Content="Choose File" HorizontalAlignment="Left" Margin="29,259,0,0" VerticalAlignment="Top" Width="118" Click="FileChooser"/>
-            
-            <ProgressBar x:Name="SendProgressBar" Margin="30,242,34,180" />
-            <ProgressBar x:Name="DownloadProgressBar" Margin="30,283,34,138"/>
+
+            <Grid  Margin="0,289,0,86">
+                <Button Content="Choose File" HorizontalAlignment="Left" Margin="29,17,0,0" VerticalAlignment="Top" Width="118" Click="FileChooser"/>
+                <ProgressBar x:Name="SendProgressBar" Margin="30,2,35,0" Height=" 10" VerticalAlignment="Top"/>
+                <ProgressBar x:Name="DownloadProgressBar" Margin="30,42,35,0"  Height=" 10" VerticalAlignment="Top"/>
+            </Grid>
+            <Grid  Margin="0,24,0,350" Height="60">
+                <TextBlock HorizontalAlignment="Left" Height="20" Margin="10,0,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="80"><Run Language="pl-pl" Text="Login"/></TextBlock>
+                <TextBlock HorizontalAlignment="Left" Height="20" Margin="95,0,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="80"><Run Language="pl-pl" Text="Password"/></TextBlock>
+
+                <TextBox Name="Login"   Text="A" HorizontalAlignment="Left" Margin="10,17,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="80" TextChanged="UserChange" />
+                <!--TextChanged=""-->
+                <PasswordBox Name="Password" HorizontalAlignment="Left" Margin="95,17,0,0"  VerticalAlignment="Top" Width="80" PasswordChanged="PassChange"/>
+                <Button Content="Login" HorizontalAlignment="Left" Margin="10,40,0,0" VerticalAlignment="Top" Width="50" Click="LoginFunc" />
+
+                <Button Content="Logout" HorizontalAlignment="Left" Margin="125,40,0,0" VerticalAlignment="Top" Width="50" Click="LogoutFunc" />
+
+                <Button Content="Register" HorizontalAlignment="Center" Margin="0,40,0,0" VerticalAlignment="Top" Click="Register"/>
+                <!-- Click=""-->
+            </Grid>
+
+
         </Grid>
 
 

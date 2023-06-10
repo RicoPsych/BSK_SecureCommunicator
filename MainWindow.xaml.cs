@@ -33,6 +33,13 @@ namespace CommunicatorWPF
 
         private void SendText(object sender, RoutedEventArgs e)
         {
+
+            if (!communicator.loggedIn)
+            {
+                MessageBox.Show("Not Logged In");
+                return;
+            }
+
             RowDefinition rowdef = new RowDefinition();
             rowdef.MinHeight = 0.1;
             this.MessageBoxGrid.RowDefinitions.Add(new RowDefinition());
@@ -70,13 +77,39 @@ namespace CommunicatorWPF
         }
 
 
+        private void LoginFunc(object sender, RoutedEventArgs e)
+        {
+            communicator.Login();
+        }
+
+        private void LogoutFunc(object sender, RoutedEventArgs e)
+        {
+            communicator.Logout();
+        }
+
+
+
+        private void Register(object sender, RoutedEventArgs e)
+        {
+            communicator.Register();
+        }
+
+        private void UserChange(object sender, RoutedEventArgs e)
+        {
+            communicator.user = this.Login.Text;
+        }
+        private void PassChange(object sender, RoutedEventArgs e)
+        {
+            communicator.password= this.Password.Password;
+        }
+
 
         private void Connect(object sender, RoutedEventArgs e)
         {
             if (!communicator.listen)
                 communicator.StartListener(MessageBoxGrid, DownloadProgressBar);
-
-            communicator.SendSessionKeyAndIV();
+            else
+                communicator.SendSessionKeyAndIV();
         }
         //Closing Window
         private void Disconnect(object sender, EventArgs e)
@@ -90,6 +123,11 @@ namespace CommunicatorWPF
         }
 
 
+        private void RecipientChange(object sender, RoutedEventArgs e)
+        {
+            communicator.recipient = this.Recipient.Text;
+            communicator.ChangeRecipient();
+        }
 
         private void RadioButtonCBC(object sender, RoutedEventArgs e)
         {
@@ -146,6 +184,15 @@ namespace CommunicatorWPF
                     else
                     {
                         SessionStatus.Background = new SolidColorBrush(Colors.Red);
+                    }
+
+                    if (communicator.loggedIn)
+                    {
+                        LoginStatus.Background = new SolidColorBrush(Colors.Green);
+                    }
+                    else
+                    {
+                        LoginStatus.Background = new SolidColorBrush(Colors.Red);
                     }
                 });
 

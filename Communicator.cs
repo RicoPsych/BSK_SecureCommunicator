@@ -1,5 +1,6 @@
 ﻿using Microsoft.Win32;
 using System;
+using System.Buffers.Text;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -9,6 +10,8 @@ using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
 using System.Runtime.Serialization.Formatters.Binary;
 using System.Security.Cryptography;
+using System.Text;
+using System.Text.Unicode;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
@@ -25,6 +28,7 @@ namespace Communicator
     {
         public int type { get; set; }
         public byte[] content { get; set; }
+
 
         public Frame(int type, byte[] content)
         {
@@ -70,12 +74,22 @@ namespace Communicator
 
         SHA256 sha256 { get; set; }
 
-        
+        public String user { get; set; }
+        public String password { get; set; }
+        public String recipient { get; set; }
+        RSA rsa;
+
+
 
         public bool session_key { get; set; }
         public int listening { get; set; }
         public bool port_taken { get; set; }
         public bool listen { get; set; }
+        public bool loggedIn { get; set; }
+
+
+        Byte[] recipient_key { get; set; } = new byte[32];
+        Byte[] local_key { get; set; } = new byte[32];
 
         Byte[] aes_key { get; set; } = new Byte[32];
         Byte[] aes_IV { get; set; } = new Byte[16];
@@ -97,11 +111,14 @@ namespace Communicator
             session_key = false;
             port_taken = false;
 
+            loggedIn= false;
             mode = CipherMode.CBC; //CipherMode.ECB
             listen = false;
             server = null;
 
-            RSA rsa = RSA.Create();
+            rsa = RSA.Create();
+            sha256 = SHA256.Create();
+
             //rsa.ExportParameters();
 
             //setup keys
@@ -110,15 +127,102 @@ namespace Communicator
             aes_key = aes.Key;
         }
 
-        public void Send(Frame data) 
+
+        public void Register() {
+
+            //sha256.ComputeHash(Encoding.ASCII.GetBytes(user));
+            if (Directory.Exists(Directory.GetCurrentDirectory() + "\\" + user))
+            {
+                return;
+            }
+        
+            Directory.CreateDirectory(Directory.GetCurrentDirectory()+"\\"+user);
+
+            byte[] pass_hash = sha256.ComputeHash(Encoding.ASCII.GetBytes(password));//Set key
+            File.WriteAllBytes(Directory.GetCurrentDirectory() + "\\" + user + "\\pass", pass_hash);
+
+            Aes aes = Aes.Create();
+
+            File.WriteAllBytes(Directory.GetCurrentDirectory() + "\\" + user + "\\IV", aes.IV);
+
+            //Encode
+            mode = CipherMode.CBC;  
+            
+            //byte[] privKey = Encrypt(rsa.ExportRSAPrivateKey(), pass_hash, aes.IV);
+            //byte[] pubKey = rsa.ExportRSAPublicKey();
+
+            File.WriteAllBytes(Directory.GetCurrentDirectory() + "\\" + user + "\\privateKey", Encrypt(rsa.ExportRSAPrivateKey(), pass_hash, aes.IV));
+
+            File.WriteAllBytes(Directory.GetCurrentDirectory() + "\\" + user + "\\publicKey", rsa.ExportRSAPublicKey());
+
+        }
+
+
+        public void Login()
         {
+            if (!Directory.Exists(Directory.GetCurrentDirectory() + "\\" + user) || password == null)
+            {
+                return;
+            }
+            byte[] input_pass = sha256.ComputeHash(Encoding.ASCII.GetBytes(password));
+            byte[] real_pass/* = Encoding.ASCII.GetBytes();*/ = //new byte[32];
+            File.ReadAllBytes(Directory.GetCurrentDirectory() + "\\" + user + "\\pass");//.Read(real_pass, 0, 32);
+
+            if (!input_pass.SequenceEqual(real_pass)){
+                return;
+            } 
+            byte[] priv_key = File.ReadAllBytes(Directory.GetCurrentDirectory() + "\\" + user + "\\privateKey");
+            byte[] IV = File.ReadAllBytes(Directory.GetCurrentDirectory() + "\\" + user + "\\IV");
+
+            //byte[] key = DecryptToBytes(priv_key, real_pass, IV);
+
+            rsa = RSA.Create();
+
+            local_key = DecryptToBytes(priv_key, real_pass, IV);
+            int count;
+            rsa.ImportRSAPrivateKey(local_key, out count);
+            
+
+            loggedIn = true;
+
+            //Set flag
+        }
+
+        public void Logout()
+        {
+
+            StopListening();
+            local_key = null;
+            loggedIn = false;
+        }
+
+        public void ChangeRecipient()
+        {
+            if (!Directory.Exists(Directory.GetCurrentDirectory() + "\\" + recipient))
+            {
+                return;
+            }
+            recipient_key = File.ReadAllBytes(Directory.GetCurrentDirectory() + "\\" + recipient + "\\publicKey");
+            
+            int count; 
+            rsa.ImportRSAPublicKey(recipient_key,out count);
+        }
+
+
+
+        public void Send(Frame data)
+        {
+
             try
             {
                 //sender = new TcpClient(send_ip, port_send);
-                if(sender == null) {
-                    //MessageBox.Show("Sender is Null");
+                if (sender == null || sender.Client == null)
+                {
+                    MessageBox.Show("Sender is Null");
+
                     Console.WriteLine("Sender is Null");
-                    return; 
+//                    throw new Exception("Sender null");
+                    return;
                 }
 
                 Thread.BeginCriticalRegion();
@@ -126,6 +230,13 @@ namespace Communicator
                 IFormatter formatter = new BinaryFormatter();
                 formatter.Serialize(stream, data);//EXCEPTION WHEN SENDING WITHOUT CONNECTING
                 Thread.EndCriticalRegion();
+            }
+            catch (IOException e)
+            {
+                MessageBox.Show("Recipient not listening");
+
+                Console.WriteLine("IOException: {0}", e);
+                //throw e;
             }
             catch (NullReferenceException e)
             {
@@ -145,12 +256,12 @@ namespace Communicator
                     
                     //MessageBox.Show("Cannot connect to client! \n " + e);
                     //ZMIENIC NA JAKIES LOGI / STATUS BAR
-                    throw;
+                    throw e;
                 }
                 else
                 {
                     MessageBox.Show("SocketException: " + e);
-                    throw;
+                    throw e;
                 }
                 
             }
@@ -159,6 +270,12 @@ namespace Communicator
 
         public void SendEncryptedText(string text)
         {
+
+            if (!loggedIn)
+            {
+                MessageBox.Show("Not Logged In");
+                return;
+            }
             try
             {
                 Send(new Frame(2, Encrypt(text, aes_key, aes_IV)));
@@ -175,6 +292,10 @@ namespace Communicator
                 {
                     MessageBox.Show("SocketException: " + e);
                 }
+            }
+            catch(Exception e)
+            {
+                MessageBox.Show("sender null");
             }
         }
 
@@ -223,6 +344,12 @@ namespace Communicator
 
         public void SendFileInfo(int size,int size_bytes, string name, string ext)
         {
+            if (!loggedIn)
+            {
+                MessageBox.Show("Not Logged In");
+                return;
+            }
+
             try
             {
                 Send(new FileInfoFrame(3, null, size, size_bytes, name, ext));
@@ -245,6 +372,12 @@ namespace Communicator
 
         public void SendEncryptedFile(string path, ProgressBar progressBar)
         {
+            if (!loggedIn)
+            {
+                MessageBox.Show("Not Logged In");
+                return;
+            }
+
             using FileStream fileStream = File.OpenRead(path);
             string ext = path.Split('.').Last();
             string name = path.Split('\\').Last();
@@ -292,30 +425,41 @@ namespace Communicator
 
         public void SendSessionKeyAndIV()
         {
+            if (!loggedIn)
+            {
+                MessageBox.Show("Not Logged In");
+                return;
+            }
 
             //Encrypt With RSA
             Byte[] aes_key_IV = new Byte[48];
             aes_IV.CopyTo(aes_key_IV, 32);
             aes_key.CopyTo(aes_key_IV, 0);
-            Frame frame = new Frame(1,aes_key_IV);
+
+            ChangeRecipient();
+            aes_key_IV = RSAEncryption(aes_key_IV, rsa.ExportParameters(false),false);
+            //rsa.Encrypt(aes_key_IV,RSAEncryptionPadding.OaepSHA256);
+
+            Frame frame = new Frame(1, aes_key_IV);
             //MessageBox.Show("Send session key and IV.");
             try {
                 //encrypt
                 Send(frame);
+                listening = 2;
+                session_key = true;
             }
-            catch (SocketException e)
+            catch (SocketException e )
             {
 
                 //didnt connect
                 session_key = false;
                 return;
             }
-            listening = 2;
-            session_key = true;
+
         }
 
  
-        public void StopListening()
+        public void StopListening()//Disconnecting causes some problems with rsa private key decryption.
         {
             //stop listening for keys or messages
             session_key = false;
@@ -323,6 +467,9 @@ namespace Communicator
             if (server != null)
                 server.Stop();
             //server = null;
+
+            aes_key = null;
+            aes_IV = null;
 
             port_taken = false;
 
@@ -332,16 +479,35 @@ namespace Communicator
                 sender.Dispose();
             }
             sender = null;
+            //*********** ????????????????? private key reset?
+            int count;
+            rsa.ImportRSAPrivateKey(local_key, out count); //
         }
 
  
 
         public void StartListener(Grid grid, ProgressBar DownloadProgressBar)
         {
+            if (!loggedIn)
+            {
+                MessageBox.Show("Not Logged In");
+                return;
+            }
+
+            Aes aes = Aes.Create();
+            aes_IV = aes.IV;
+            aes_key = aes.Key;
+
             listen = true;
             listener = new Thread(new ThreadStart(() => Listener(grid, DownloadProgressBar)));
             listener.Start();
-            sender = new TcpClient(send_ip, port_send);
+            try
+            {
+                sender = new TcpClient(send_ip, port_send);
+            } catch (SocketException e)
+            {
+                MessageBox.Show("Recipient not found");
+            }
         }
 
         private void StartServer()
@@ -377,19 +543,43 @@ namespace Communicator
                         Console.WriteLine(ex.ToString());
                     }
 
+                    if (!listen)
+                    {
+                        break;
+                    }
 
-                    if (frame == null)
+                    if (frame == null )
                     {
                         continue;
                     }
+
                     else if (frame.type == 1) //Receive key and IV
                     {
+                        try
+                        {
+                            //Decrypt recieved key and IV
+                            frame.content = RSADecryption(frame.content, rsa.ExportParameters(true), false); 
+                                //rsa.Decrypt(frame.content, RSAEncryptionPadding.OaepSHA256);
+                            //Array.Copy(frame.content, 0, aes_key, 0, 32);
+                            //Array.Copy(frame.content, 32, aes_IV, 0, 16);
 
+                            //session_key = true;
+                            //listening = 2;
+                            ////MessageBox.Show("Received session key and IV.");
+                            //Console.WriteLine("Received session key and IV.");
+                        }
+                        catch (Exception ex)
+                        {
+                            MessageBox.Show("Different recipient");
+                            continue;
+                        }
+                        Thread.BeginCriticalRegion();
                         Array.Copy(frame.content, 0, aes_key, 0, 32);
                         Array.Copy(frame.content, 32, aes_IV, 0, 16);
-
                         session_key = true;
                         listening = 2;
+
+                        Thread.EndCriticalRegion();
                         //MessageBox.Show("Received session key and IV.");
                         Console.WriteLine("Received session key and IV.");
                     }
@@ -426,6 +616,10 @@ namespace Communicator
                         {
                             MessageBox.Show("Crpyto Error");
                         }
+                        //catch( ArgumentNullException e)
+                        //{
+                        //    //MessageBox.Show("Null Error");
+                        //}
                     }
                     else if (frame.type == 3)//Receive FileInfo
                     {
@@ -556,6 +750,11 @@ namespace Communicator
             // Check arguments.
             if (cipherText == null || cipherText.Length <= 0)
                 throw new ArgumentNullException("cipherText");
+            if (Key == null || cipherText.Length <= 0)
+                throw new ArgumentNullException("key");
+            if (IV == null || cipherText.Length <= 0)
+                throw new ArgumentNullException("IV");
+
 
             // Declare the string used to hold
             // the decrypted text.
@@ -613,5 +812,45 @@ namespace Communicator
             }
             return plainText;
         }
+
+
+        static public byte[] RSAEncryption(byte[] Data, RSAParameters RSAKey, bool DoOAEPPadding)
+        {
+            try
+            {
+                byte[] encryptedData;
+                using (RSACryptoServiceProvider RSA = new RSACryptoServiceProvider())
+                {
+                    RSA.ImportParameters(RSAKey);
+                    encryptedData = RSA.Encrypt(Data, DoOAEPPadding);
+                }
+                return encryptedData;
+            }
+            catch (CryptographicException e)
+            {
+                Console.WriteLine(e.Message);
+                return null;
+            }
+        }
+
+        static public byte[] RSADecryption(byte[] Data, RSAParameters RSAKey, bool DoOAEPPadding)
+        {
+            try
+            {
+                byte[] decryptedData;
+                using (RSACryptoServiceProvider RSA = new RSACryptoServiceProvider())
+                {
+                    RSA.ImportParameters(RSAKey);
+                    decryptedData = RSA.Decrypt(Data, DoOAEPPadding);
+                }
+                return decryptedData;
+            }
+            catch (CryptographicException e)
+            {
+                Console.WriteLine(e.ToString());
+                return null;
+            }
+        }
+
     }
 }
